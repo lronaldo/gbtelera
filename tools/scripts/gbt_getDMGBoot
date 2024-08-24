@@ -1,0 +1,92 @@
+#!/bin/bash
+##----------LICENSE NOTICE-------------------------------------------------------------------------------------------------------##
+##  This file is part of GBTelera: A Gameboy Development Framework                                                               ##
+##  Copyright (C) 2024 ronaldo / Cheesetea / ByteRealms (@FranGallegoBR)                                                         ##
+##                                                                                                                               ##
+## Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation    ##
+## files (the “Software”), to deal in the Software without restriction, including without limitation the rights to use, copy,    ##
+## modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the         ##
+## Softwareis furnished to do so, subject to the following conditions:                                                           ##
+##                                                                                                                               ##
+## The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.##
+##                                                                                                                               ##
+## THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE          ##
+## WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR         ##
+## COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,   ##
+## ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                         ##
+##-------------------------------------------------------------------------------------------------------------------------------##
+
+##
+## File: gbt_getDMGBoot
+##    Obtain the original N1nt3nd0 DMB Boot ROM
+##
+## Usage:
+##    <gbt_getDMGBoot> [options]
+##
+## Description:
+##    This script downloads original N1nt3nd0 Boot ROM (dmg_boot.bin) and copies it into GBTelera's emulator folder 
+## (${GBT_PATH}/tools/emulators/). This Boot ROM can be used by the emulators to reproduce the behaviour of the original 
+## GameBoy during its boot sequence.
+##
+## Command line options:
+##    -h | --help                    - Shows help information on the terminal.
+##
+
+# GET LIBRARY FUNCTIONS
+source ${GBT_PATH}/tools/libs/bash_library.sh
+
+# CONFIG
+URL=https://gbdev.gg8.se/files/roms/bootroms/dmg_boot.bin
+TO=${GBT_PATH}/tools/emulators/
+BROM=dmg_boot.bin
+
+###############################################################
+###############################################################
+## Show how this script is to be used and exit
+##
+function usage() {
+   echo "${COLOR_LIGHT_YELLOW}USAGE"
+   echo "  ${COLOR_LIGHT_BLUE}$(basename $0) [options]"
+   echo
+   echo "${COLOR_CYAN}  This script downloads original N1nt3nd0 Boot ROM (dmg_boot.bin) and copies it into GBTelera's \
+emulator folder (${GBT_PATH}/tools/emulators/). This Boot ROM can be used by the emulators to reproduce the behaviour \
+of the original GameBoy during its boot sequence."
+   echo
+   echo "${COLOR_LIGHT_YELLOW}OPTIONS"
+   echo "${COLOR_LIGHT_BLUE}  -h | --help"
+   echo "${COLOR_CYAN}       Shows this help information"
+   echo ${COLOR_NORMAL}
+   exit 1
+}
+
+###############################################################
+###############################################################
+## Check command line parameters
+##
+
+while (( $# >= 1 )); do
+   case $1 in
+      ## Show Help
+      "-h" | "--help")
+         usage
+      ;;
+      ## Get main parameter (ProjectDir)
+      *)
+         if isCommandLineOption "$1"; then
+            paramError "Unrecognized command line option '$1'" 7
+	 else
+            paramError "Unrequired parameter '$1'" 8
+         fi
+      ;;
+   esac
+   shift
+done
+
+stageMessage "GBTelera" "Getting Original N1nt3nd0 DMG Boot ROM from web"
+coloredMachineEcho "${COLOR_LIGHT_BLUE}" 0.005 "Obtaining ROM from '${URL}'..."
+echo ${COLOR_NORMAL}
+wget "${URL}" -O "${TO}/${BROM}"
+coloredMachineEcho "${COLOR_LIGHT_GREEN}" 0.005 "'${BROM}' saved to '${TO}/${BROM}'"
+echo ${COLOR_NORMAL}
+coloredMachineEcho "${COLOR_NORMAL}" 0.005 "You may now configure your emulators to use this DMG ROOM on Boot"
+echo

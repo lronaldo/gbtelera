@@ -1,0 +1,73 @@
+.\" SPDX-License-Identifier: MIT
+.\"
+.Dd December 22, 2023
+.Dt RGBDS 7
+.Os
+.Sh NAME
+.Nm rgbds
+.Nd Rednex Game Boy Development System
+.Sh EXAMPLES
+To get a working ROM image from a single assembly source file:
+.Bd -literal -offset indent
+$ rgbasm \-o game.o game.asm
+$ rgblink \-o game.gb game.o
+$ rgbfix \-v \-p 0 game.gb
+.Ed
+.Pp
+Or in a single command line, without creating an intermediate object file:
+.Bd -literal -offset indent
+$ (rgbasm -o - - | rgblink -o - - | rgbfix -v -p 0) < game.asm > game.gb
+.Ed
+.Sh SEE ALSO
+.Xr rgbasm 1 ,
+.Xr rgbasm 5 ,
+.Xr rgblink 1 ,
+.Xr rgblink 5 ,
+.Xr rgbfix 1 ,
+.Xr rgbgfx 1 ,
+.Xr gbz80 7 ,
+.Xr rgbds 5
+.Sh HISTORY
+.Bl -item
+.It
+1996-10-01:
+.An Carsten S\(/orensen
+.Pq a.k.a. SurfSmurf
+releases xAsm, xLink, and RGBFix, a Game Boy SM83 (GBZ80) assembler/linker system for DOS/Win32.
+.It
+1997-07-03: S\(/orensen releases ASMotor, packaging the three programs together and moving towards making them a general-purpose target-independent system.
+.It
+1999-08-01:
+.An Justin Lloyd
+.Pq a.k.a. Otaku no Zoku
+adapts ASMotor to re-focus on SM83 assembly/machine code, and releases this version as RGBDS.
+.It
+2009-06-11:
+.An Vegard Nossum
+adapts the code to be more UNIX-like and releases this version as rgbds-linux.
+.It
+2010-01-12:
+.An Anthony J. Bentley
+forks Nossum's repository.
+The fork becomes the reference implementation of RGBDS.
+.It
+2015-01-18:
+.An stag019
+begins implementing RGBGFX, a PNG‐to‐Game Boy graphics converter, for eventual integration into RGBDS.
+.It
+2016-09-05: RGBGFX is integrated into Bentley's repository.
+.It
+2017-02-23: Bentley's repository is moved to the
+.Lk https://github.com/rednex/rgbds rednex
+organization.
+.It
+2018-01-26: The codebase is relicensed under the MIT license.
+.It
+2020-09-15: The repository is moved to the
+.Lk https://github.com/gbdev/rgbds gbdev
+organization.
+.It
+2022-05-17: The
+.Lk https://rgbds.gbdev.io rgbds.gbdev.io
+website for RGBDS documentation and downloads is published.
+.El
