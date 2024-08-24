@@ -1,4 +1,4 @@
-# gbtelera
+# GBTelera
 Basic framework for Gameboy development in assembly.
 
 This repository contains a minimal set of tools for Gameboy development under Linux systems, inspired in CPCtelera. By now, these are the tools included:
@@ -25,11 +25,14 @@ export PATH=${PATH}:${GBT_PATH}/tools/rgbds:${GBT_PATH}/tools/scripts
 Remember to substitute `/path/to/main/folder/of/gbtelera/` with the actual path where you clonned gbtelera.
 
 # Author
-Francisco J. Gallego-Durán 
+[Francisco J. Gallego-Durán ](https://github.com/lronaldo)
  - aka. ronaldo / Cheesetea/ByteRealms
  - aka. ProfesorRetroman
 
-X: @FranGallegoBR
-X: @ProfeRetroman
-Youtube: @ProfesorRetroman
+## Contact
+ - X: [@FranGallegoBR](https://x.com/FranGallegoBR)
+ - X: [@ProfeRetroman](https://x.com/ProfeRetroman)
+ - Youtube: [@ProfesorRetroman](https://www.youtube.com/@ProfesorRetroman)
+ - Web: [profesorretroman.com](https://www.profesorretroman.com)
+ - E-mail: fjgallego(@)ua.es
 
