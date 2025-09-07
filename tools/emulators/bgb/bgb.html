@@ -5,7 +5,7 @@
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 </head>
 <body>
-<h2>BGB version 1.6.4</h2>
+<h2>BGB version 1.6.6</h2>
 
 <b>homepage: </b><a href="https://bgb.bircd.org/">https://bgb.bircd.org/</a><br>
 <b>email: </b>bgb at bircd dot org
@@ -337,14 +337,14 @@ A list of shortcut keys that work in the debugger:
 <table>
 <tr><td>F2</td><td>Toggle breakpoint</td></tr>
 <tr><td>F3</td><td>Step Over</td></tr>
+<tr><td>Shift+F3</td><td>Step over reverse</td></tr>
 <tr><td>F4</td><td>Run to cursor</td></tr>
 <tr><td>Shift+F4</td><td>Run to cursor no break</td></tr>
 <tr><td>Ctrl+F4</td><td>Run to cursor reverse</td></tr>
-<tr><td>Shift+F8</td><td>Step out reverse</td></tr>
 <tr><td>F5</td><td>VRAM viewer</td></tr>
 <tr><td>F6</td><td>Jump to cursor</td></tr>
-<tr><td>Shift+F7</td><td>Trace reverse</td></tr>
 <tr><td>F7</td><td>Trace (step into)</td></tr>
+<tr><td>Shift+F7</td><td>Trace reverse</td></tr>
 <tr><td>F8</td><td>Step out</td></tr>
 <tr><td>Shift+F8</td><td>Step out reverse</td></tr>
 <tr><td>F9</td><td>Run</td></tr>
@@ -380,11 +380,14 @@ A list of shortcut keys that work in the debugger:
 </table>
 
 <h3 id="expressions">expressions, breakpoint conditions, and debug messages</h3>
-In the "condition" field of a breakpoint, one can enter an expression. for example ($ff44)=$90, to trip on the start of each vblank. the condition will only trip once every time when it becomes true.
+In the "condition" field of a breakpoint, one can enter an expression. for example ($ff44)=$90, to trip on the start of each vblank. If PC is "any" (not given), the condition will only trip once every time when it becomes true. If PC is given, then the condition trips every time if it is true. This behavior can also be changed in the settings, tab Debug.<p>
+
 besides constant values and addresses, one can use the following:<p>
 CPU registers: AF, BC, DE, HL, SP, PC, B, C, D, E, H, L, A, ZERO, ZF, Z, CARRY, CY, IME, ALLREGS<br>
-other state values: ROMBANK, XRAMBANK, SRAMBANK, WRAMBANK, VRAMBANK, TOTALCLKS, LASTCLKS, CLKS2VBLANK<p>
+other state values: ROMBANK, XRAMBANK, SRAMBANK, WRAMBANK, VRAMBANK, TOTALCLKS, LASTCLKS, CLKS2VBLANK, SCANLINE<p>
 These values can also be evaluated by using the menu, <i>"Debug"</i>, <i>"Evaluate expression"</i>.<p>
+
+Besides the above, a breakpoint condition such as "..5" breaks once every 5th time the breakpoint is hit.<p>
 
 In debug messages and expressions, VALUE is the value currently being read or written and TARGET is the address (useful when logging debug messages on watchpoints)<p>
 
@@ -392,12 +395,57 @@ The unit of all "clocks" values is 1 nop in doublespeed mode, or about 0.5 micro
 
 To add "ld d,d" debug messages into the code, assemble an opcode in the form: .msg 'message' where message is the message content. debug messages can contain expressions between %%. When enabled in the settings, whenever a debug message is encountered in the code, it will be logged to the debug messages window or log file.<p>
 
-Debug messages also support ternary operators in the form: "%boolean expression%text if true;text if false;".<p>
+Debug messages also support ternary operators in the form: "%boolean expression%text if true;text if false;".<br>
+It was possible from 1.5.5 to 1.6.4 to have %% expressions in the true/false strings, but this is ambiguous and is no longer done by default in 1.6.5. To have this behavior, use a ? after the condition, such as: %condition%?true;false;<p>
 
-The internal code that makes up a debug message is as follows: ld d,d; jr @end; dw $6464; dw $0000; db "message"; @end<p>
-One can also create debug messages that point to a null terminated text string elsewhere: ld d,d; jr @end; dw $6464; dw $0001; dw address; dw bank; @end<p>
+The internal code that makes up a debug message is as follows:
+<pre>
+ld d,d
+jr @end
+dw $6464
+dw $0000
+db "message"
+@end
+</pre>
+<p>
+One can also create debug messages that point to a null terminated text string elsewhere:
+<pre>
+ld d,d
+jr @end
+dw $6464
+dw $0001
+dw address
+dw bank
+@end</pre>
+<p>
+since version 1.6.5, gbdk "printf" debug messages are supported. In the code viewer, a printf debug message looks like and can be created with: .msg_printf<p>
+The internal assembly code of a printf message is:
+<pre>
+ld d,d
+jr @end
+dw $6464
+dw $0200
+@end</pre>
+When a printf message is encountered, the null terminated C style format string is read from address HL, and the data is read from address DE.
+the format string can have the following format tokens, which will read the value from the data. Sizes are given in bytes. Data values are little endian.
+<table border>
+<tr><td><b>token</b></td><td><b>size</b></td><td><b>description</b></td></tr>
+<tr><td>%d</td><td>2</td><td>signed 16 bits word, decimal</td></tr>
+<tr><td>%u</td><td>2</td><td>unsigned 16 bits word, decimal</td></tr>
+<tr><td>%x</td><td>2</td><td>16 bits word, hexadeximal, lowercase</td></tr>
+<tr><td>%X</td><td>2</td><td>16 bits word, hexadeximal, uppercase</td></tr>
+<tr><td>%hd %hu %hx %hX</td><td>1</td><td>integer values as above, but 8 bits</td></tr>
+<tr><td>%ld %lu %lx %lX</td><td>4</td><td>integer values as above, but 32 bits</td></tr>
+<tr><td>%lld %llu %llx %llX</td><td>8</td><td>integer values as above, but 64 bits</td></tr>
+<tr><td>%f</td><td>4</td><td>single precision float (IEEE 754)</td></tr>
+<tr><td>%lf</td><td>8</td><td>double precision float (IEEE 754)</td></tr>
+<tr><td>%s</td><td>2</td><td>16 bits address of a null terminated string</td></tr>
+<tr><td>%c</td><td>2</td><td>character (8 bits, followed by a zero byte)</td></tr>
+<tr><td>%%</td><td>0</td><td>% sign</td></tr>
+</table>
 
-
+All integer number types can be length padded, for example %04x to pad a hexadecimal word to length 4 with zeroes.<p>
+After The printf debug message is generated, it is processed as a debug message so expressions such as %ROMBANK% are filled in. The format string and resulting message have a maximum length of 4095 bytes, after which they are truncated.
 
 
 <h3 id="commandlineparams">Commandline parameters</h3>
@@ -421,6 +469,7 @@ All -params also work as --param.
 </li><li><b><i>-autoexit</i> </b> terminate when breaking to debugger or finishing demo playback. implied by headless.
 </li><li><b><i>-nowarn</i> </b> suppress most warning dialogs. useful with automated or unattended use. implied by headless.
 </li><li><b><i>-nowriteini</i> </b> do not write the bgb.ini file. implied by headless.
+</li><li><b><i>-ini</i> [filename]</b> use another ini file instead of bgb.ini
 </li><li><b><i>-runfast</i> </b> run undelayed. useful with headless mode.
 </li><li><b><i>-hf</i> </b> shorthand for -headless -runfast
 </li><li><b><i>-stateonexit</i> [filename]</b> save a state when exiting. useful with headless mode.
@@ -540,6 +589,31 @@ BGB as of 1.5.7 has correct TID (trainer ID) in pokemon games, on GBC and GBA, w
 As of 1.5.8, hard resets (pressing the reset key, * by default), will be recorded and played back in demos. A demo can be recorded during a speedrun, and played back later in non-speedrun mode, as long as all platform settings are the same (choice of platform, GBA, GB player, bootroms), and the BGB version is the same.
 
 <h3 id="history">version history:</h3>
+
+<b>1.6.6 (2025-07-20)</b> 
+<ul><li>Fixed many bugs and problems, including regressions: unicode filenames in 1.6.5. link remote joy in 1.6.
+</li><li>Fixed that a large sym file makes singlestepping slow
+</li><li>Addressed a problem with non-smooth graphics on some windows 10 multi monitor setups
+</li><li>Improved a problem with stuttering with openGL
+</li><li>debugger: "log link transfers (to SGB window)" checkbox is now persistent
+</li><li>added -ini parameter for running with a different ini file
+</li><li>fixes and improvements to "GBC interlace" blending to simulate "persistence", in games such as "men in black"
+</li><li>the default open file dialog in 32 bits bgb now supports unicode file names
+</li><li>64 bits bgb GUI now enables theming like 32 bits bgb
+</li><li>Accuracy improvements
+</li><li>Speed optimizations / performance fixes
+</li></ul>
+
+<b>1.6.5 (2025-03-19)</b> 
+<ul><li>Fixed many bugs and problems
+</li><li>Added support for gbdk printf debug messages
+</li><li>Fixed GBC reality colors non-smooth gradients
+</li><li>Fixed problems with fullscreen mode such as taskbar showing, including on wine
+</li><li>Speed optimizations
+</li><li>Accuracy improvements
+</li><li>Changed breakpoint condition to level trigger, unless PC any, and added setting to change this
+</li><li>Added a mappable button to enable/disable SGB colors
+</li></ul>
 
 <b>1.6.4 (2024-08-31)</b> 
 <ul><li>Fixed many bugs and problems

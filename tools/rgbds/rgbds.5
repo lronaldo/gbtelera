@@ -1,6 +1,6 @@
 .\" SPDX-License-Identifier: MIT
 .\"
-.Dd December 22, 2023
+.Dd July 31, 2025
 .Dt RGBDS 5
 .Os
 .Sh NAME
@@ -145,6 +145,10 @@ If the symbol belongs to a section, this is the offset within that symbol's sect
 .Bl -tag -width Ds -compact
 .It Cm STRING Ar Name
 The section's name.
+.It Cm LONG Ar NodeID
+Context in which the section was defined.
+.It Cm LONG Ar LineNo
+Line number in the context at which the section was defined.
 .It Cm LONG Ar Size
 The section's size, in bytes.
 .It Cm BYTE Ar Type
@@ -250,7 +254,7 @@ Size of the
 below.
 .It Cm BYTE Ar RPNExpr Ns Bq RPNSize
 The patch's value, encoded as a RPN expression
-.Pq see Sx RPN EXPRESSIONS .
+.Pq see Sx RPN expressions .
 .El
 .It Cm ENDR
 .El
@@ -290,14 +294,14 @@ Size of the
 below.
 .It Cm BYTE Ar RPNExpr Ns Bq RPNSize
 The patch's value, encoded as a RPN expression
-.Pq see Sx RPN EXPRESSIONS .
+.Pq see Sx RPN expressions .
 .It Cm STRING Ar Message
 The message displayed if the expression evaluates to a non-zero value.
 If empty, a generic message is displayed instead.
 .El
 .It Cm ENDR
 .El
-.Ss RPN EXPRESSIONS
+.Ss RPN expressions
 Expressions in the object file are stored as RPN, or
 .Dq Reverse Polish Notation ,
 which is a notation that allows computing arbitrary expressions with just a simple stack.
@@ -384,13 +388,30 @@ The value is then ANDed with $00FF
 check.
 Checks if the value is a valid
 .Ql rst
-.Pq see Do RST vec Dc in Xr gbz80 7
-vector, that is one of $00, $08, $10, $18, $20, $28, $30, or $38.
+vector
+.Pq see Do RST vec Dc in Xr gbz80 7 ,
+that is, one of $00, $08, $10, $18, $20, $28, $30, or $38.
 The value is then ORed with $C7
 .Pq Ql \&| $C7 .
+.It Li $62 Ta Ql bit/res/set
+check; followed by the instruction's
+.Cm BYTE
+mask.
+Checks if the value is a valid bit index
+.Pq see e.g. Do BIT u3, r8 Dc in Xr gbz80 7 ,
+that is, from 0 to 7.
+The value is then ORed with the instruction's mask.
 .It Li $80 Ta Integer literal; followed by the
 .Cm LONG
 integer.
+.It Li $70 Ta Cm HIGH
+byte.
+.It Li $71 Ta Cm LOW
+byte.
+.It Li $72 Ta Cm BITWIDTH
+value.
+.It Li $73 Ta Cm TZCOUNT
+value.
 .It Li $81 Ta A symbol's value; followed by the symbol's
 .Cm LONG
 ID.

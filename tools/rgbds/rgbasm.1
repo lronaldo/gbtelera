@@ -1,6 +1,6 @@
 .\" SPDX-License-Identifier: MIT
 .\"
-.Dd December 22, 2023
+.Dd July 31, 2025
 .Dt RGBASM 1
 .Os
 .Sh NAME
@@ -8,13 +8,14 @@
 .Nd Game Boy assembler
 .Sh SYNOPSIS
 .Nm
-.Op Fl EHhLlVvw
+.Op Fl EhVvw
 .Op Fl b Ar chars
 .Op Fl D Ar name Ns Op = Ns Ar value
 .Op Fl g Ar chars
 .Op Fl I Ar path
 .Op Fl M Ar depend_file
 .Op Fl MG
+.Op Fl MC
 .Op Fl MP
 .Op Fl MT Ar target_file
 .Op Fl MQ Ar target_file
@@ -23,6 +24,7 @@
 .Op Fl p Ar pad_value
 .Op Fl Q Ar fix_precision
 .Op Fl r Ar recursion_depth
+.Op Fl s Ar features Ns : Ns Ar state_file
 .Op Fl W Ar warning
 .Op Fl X Ar max_errors
 .Ar asmfile
@@ -50,8 +52,19 @@ is invalid because it could also be
 The arguments are as follows:
 .Bl -tag -width Ds
 .It Fl b Ar chars , Fl \-binary-digits Ar chars
-Change the two characters used for binary constants.
-The defaults are 01.
+Allow two characters to be used for binary constants in addition to the default
+.Sq 0
+and
+.Sq 1 .
+Valid characters are numbers other than
+.Sq 0
+and
+.Sq 1 ,
+letters,
+.Sq \&. ,
+.Sq # ,
+or
+.Sq @ .
 .It Fl D Ar name Ns Oo = Ns Ar value Oc , Fl \-define Ar name Ns Oo = Ns Ar value Oc
 Add a string symbol to the compiled source code.
 This is equivalent to
@@ -64,25 +77,42 @@ is not specified.
 .It Fl E , Fl \-export-all
 Export all labels, including unreferenced and local labels.
 .It Fl g Ar chars , Fl \-gfx-chars Ar chars
-Change the four characters used for gfx constants.
+Allow four characters to be used for graphics constants in addition to the default
+.Sq 0 ,
+.Sq 1 ,
+.Sq 2 ,
+and
+.Sq 3 .
+Valid characters are numbers other than
+.Sq 0
+to
+.Sq 3 ,
+letters,
+.Sq \&. ,
+.Sq # ,
+or
+.Sq @ .
 The defaults are 0123.
+.It Fl h , Fl \-help
+Print help text for the program and exit.
 .It Fl I Ar path , Fl \-include Ar path
 Add a new
 .Dq include path ;
 .Ar path
 must point to a directory.
-When a
+When any
 .Ic INCLUDE
-.Pq including the implicit one from Fl P
+.Pq including the implicit one from Fl P ,
+.Ic INCBIN ,
 or
-.Ic INCBIN
+.Ic READFILE
 is attempted,
 .Nm
 first looks up the provided path from its working directory; if this fails, it tries again from each of the
 .Dq include path
 directories, in the order they were provided.
 .It Fl M Ar depend_file , Fl \-dependfile Ar depend_file
-Print
+Write
 .Xr make 1
 dependencies to
 .Ar depend_file .
@@ -91,17 +121,33 @@ To be used in conjunction with
 .Fl M .
 This makes
 .Nm
-assume that missing files are auto-generated: when
+assume that missing files are auto-generated: when any
 .Ic INCLUDE
-.Pq including the implicit one from Fl P
+.Pq including the implicit one from Fl P ,
+.Ic INCBIN ,
 or
-.Ic INCBIN
+.Ic READFILE
 is attempted on a non-existent file, it is added as a dependency, then
 .Nm
-exits normally instead of erroring out.
-This feature is used in automatic updating of makefiles.
+exits normally or continues processing (depending on whether
+.Fl MC
+was enabled) instead of erroring out.
+This feature is used in automatic updating of Makefiles.
+.It Fl MC
+Implies
+.Fl MG .
+This makes
+.Nm
+continue processing after a non-existent dependency file, instead of exiting.
+Note that this is
+.Em not
+recommended if any non-existent dependencies would have influenced subsequent processing, e.g. by causing an
+.Ic IF
+condition to take a different branch.
 .It Fl MP
-When enabled, this causes a phony target to be added for each dependency other than the main file.
+When enabled, this adds a phony target to the rules emitted by
+.Fl M
+for each dependency other than the main file.
 This prevents
 .Xr make 1
 from erroring out when dependency files are deleted.
@@ -130,6 +176,7 @@ This acts as if a
 .Ql Ic INCLUDE Qq Ar include_file
 was read before the input
 .Ar asmfile .
+Multiple files can be pre-included in the order they were provided.
 .It Fl p Ar pad_value , Fl \-pad-value Ar pad_value
 Use this as the value for
 .Ic DS
@@ -143,8 +190,45 @@ The argument may start with a
 to match the Q notation, for example,
 .Ql Fl Q Ar .16 .
 .It Fl r Ar recursion_depth , Fl \-recursion-depth Ar recursion_depth
-Specifies the recursion depth past which RGBASM will assume being in an infinite loop.
+Specifies the recursion depth past which
+.Nm
+will assume being in an infinite loop.
 The default is 64.
+.It Fl s Ar features Ns : Ns Ar state_file , Fl \-state Ar features Ns : Ns Ar state_file
+Write the specified
+.Ar features
+to
+.Ar state_file ,
+based on the final state of
+.Nm
+at the end of its input.
+The expected
+.Ar features
+are a comma-separated subset of the following:
+.Bl -tag -width Ds
+.It Cm equ
+Write all numeric constants as
+.Ql Ic def Ar name Ic equ Ar value .
+.It Cm var
+Write all variables as
+.Ql Ic def Ar name Ic = Ar value .
+.It Cm equs
+Write all string constants as
+.Ql Ic def Ar name Ic equs Qq Ar value .
+.It Cm char
+Write all characters as
+.Ql Ic charmap Ar name , Ar value .
+.It Cm macro
+Write all macros as
+.Ql Ic macro Ar name No ... Ic endm .
+.It Cm all
+Acts like
+.Cm equ,var,equs,char,macro .
+.El
+.Pp
+This flag may be specified multiple times with different feature subsets to write them to different files (see
+.Sx EXAMPLES
+below).
 .It Fl V , Fl \-version
 Print the version of the program and exit.
 .It Fl v , Fl \-verbose
@@ -162,7 +246,7 @@ section for a list of warnings.
 Disable all warning output, even when turned into errors.
 .It Fl X Ar max_errors , Fl \-max-errors Ar max_errors
 If more than this number of errors (not warnings) occur, then abort the assembly process;
-.Fl X 0
+.Fl X Ar 0
 disables this behavior.
 The default is 100 if
 .Nm
@@ -174,13 +258,19 @@ The following options alter the way warnings are processed.
 .Bl -tag -width Ds
 .It Fl Werror
 Make all warnings into errors.
+This can be negated as
+.Fl Wno-error
+to prevent turning all warnings into errors.
 .It Fl Werror=
-Make the specified warning into an error.
+Make the specified warning or meta warning into an error.
 A warning's name is appended
 .Pq example: Fl Werror=obsolete ,
 and this warning is implicitly enabled and turned into an error.
-This is an error if used with a meta warning, such as
-.Fl Werror=all .
+This can be negated as
+.Fl Wno-error=
+to prevent turning a specified warning into an error, even if
+.Fl Werror
+is in effect.
 .El
 .Pp
 The following warnings are
@@ -198,10 +288,14 @@ Enables literally every warning.
 .El
 .Pp
 The following warnings are actual warning flags; with each description, the corresponding warning flag is included.
-Note that each of these flag also has a negation (for example,
+Note that each of these flags also has a negation (for example,
 .Fl Wcharmap-redef
 enables the warning that
 .Fl Wno-charmap-redef
+disables; and
+.Fl Wall
+enables every warning that
+.Fl Wno-all
 disables).
 Only the non-default flag is listed here.
 Ignoring the
@@ -225,7 +319,7 @@ This warning is enabled by
 .Fl Wall .
 .It Fl Wbuiltin-args
 Warn about incorrect arguments to built-in functions, such as
-.Fn STRSUB
+.Fn STRSLICE
 with indexes outside of the string's bounds.
 This warning is enabled by
 .Fl Wall .
@@ -253,12 +347,15 @@ This warning is enabled by
 Warn when shifting macro arguments past their limits.
 This warning is enabled by
 .Fl Wextra .
+.It Fl Wno-nested-comment
+Warn when the block comment start sequence
+.Ql /*
+is found inside of a block comment.
+Block comments cannot be nested, so the first
+.Ql */
+will end the whole comment.
 .It Fl Wno-obsolete
-Warn when obsolete constructs such as the
-.Ic _PI
-constant or
-.Ic PRINTT
-directive are encountered.
+Warn when obsolete features are encountered, which have been deprecated and may later be removed.
 .It Fl Wnumeric-string=
 Warn when a multi-character string is treated as a number.
 .Fl Wnumeric-string=0
@@ -271,6 +368,18 @@ or just
 warns about strings longer than four characters, since four or fewer characters fit within a 32-bit integer.
 .Fl Wnumeric-string=2
 warns about any multi-character string.
+.It Fl Wpurge=
+Warn when purging symbols which are likely to have been necessary.
+.Fl Wpurge=0
+or
+.Fl Wno-purge
+disables this warning.
+.Fl Wpurge=1
+or just
+.Fl Wpurge
+warns when purging any exported symbol (regardless of type).
+.Fl Wpurge=2
+also warns when purging any label (even if not exported).
 .It Fl Wshift
 Warn when shifting right a negative value.
 Use a division by 2**N instead.
@@ -294,7 +403,7 @@ also warns when an N-bit value is less than -2**(N-1), which will not fit in two
 Warn when a character goes through charmap conversion but has no defined mapping.
 .Fl Wunmapped-char=0
 or
-.Fl Wunmapped-char
+.Fl Wno-unmapped-char
 disables this warning.
 .Fl Wunmapped-char=1
 or just
@@ -303,6 +412,24 @@ only warns if the active charmap is not empty.
 .Fl Wunmapped-char=2
 warns if the active charmap is empty, and/or is not the default charmap
 .Sq main .
+.It Fl Wunmatched-directive
+Warn when a
+.Ic PUSHC , PUSHO ,
+or
+.Ic PUSHS
+directive does not have a corresponding
+.Ic POPC , POPO ,
+or
+.Ic POPS .
+This warning is enabled by
+.Fl Wextra .
+.It Fl Wunterminated-load
+Warn when a
+.Ic LOAD
+block is not terminated by an
+.Ic ENDL .
+This warning is enabled by
+.Fl Wextra .
 .It Fl Wno-user
 Warn when the
 .Ic WARN
@@ -327,6 +454,12 @@ The resulting object file is not yet a usable ROM image\(emit must first be run 
 .Xr rgblink 1
 and then
 .Xr rgbfix 1 .
+.Pp
+Writing the final assembler state to a file:
+.Dl $ rgbasm -s all:state.dump.asm foo.asm
+.Pp
+Or to multiple files:
+.Dl $ rgbasm -s equ,var:numbers.dump.asm -s equs:strings.dump.asm foo.asm
 .Sh BUGS
 Please report bugs on
 .Lk https://github.com/gbdev/rgbds/issues GitHub .
@@ -336,6 +469,7 @@ Please report bugs on
 .Xr rgbfix 1 ,
 .Xr rgbgfx 1 ,
 .Xr gbz80 7 ,
+.Xr rgbasm-old 5 ,
 .Xr rgbds 5 ,
 .Xr rgbds 7
 .Sh HISTORY
