@@ -26,9 +26,16 @@
 ## MAIN GBTelera folder configuration
 GBT :=${GBT_PATH}
 
+## Detect host OS for platform-specific settings
+UNAME_S := $(shell uname -s)
+
 ## Configure dependent paths only if GBT is set
 ifneq ($(strip $(GBT)),)
-   RGBDS       :=$(GBT)/tools/rgbds/
+   ifeq ($(UNAME_S),Darwin)
+      RGBDS       :=$(GBT)/tools/rgbds/macos/
+   else
+      RGBDS       :=$(GBT)/tools/rgbds/linux/
+   endif
    GBT_INCLUDE :=-I$(GBT)/include
 else
    $(warning "[[ WARNING ]]: GBT_PATH environment variable is not set. Using default system settings for RGBDS.")
@@ -55,9 +62,16 @@ comma := ,
 ## $1: Folder
 ## $2: Extension
 ##
+ifeq ($(UNAME_S),Darwin)
+## For macOS BSD (POSIX) find does not support -readable, we use -perm -u=r instead
+define GetAllFilesFrom
+$(shell find "$(strip $(1))" -iname '*.$(strip $(2))' -type f -perm -u=r)
+endef
+else
 define GetAllFilesFrom
 $(shell find "$(strip $(1))" -iname '*.$(strip $(2))' -type f -readable)
 endef
+endif
 
 ##--------------------------------------------------------------------------------------------
 ## Swaps all extensions from a given list of files
