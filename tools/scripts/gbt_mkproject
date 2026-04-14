@@ -110,7 +110,11 @@ stageMessage "GBTelera" "Creating new project in ${COLOR_WHITE}${PROJECTDIR}/"
 coloredMachineEcho "${COLOR_CYAN}" 0.005 "> Creating project folder..."
 drawOK
 coloredMachineEcho "${COLOR_CYAN}" 0.005 "> Duplicating scafolding basic project template..."
-cp -rT "${TEMPLATE_FOLDER}" "${PROJECTDIR}"
+if [[ "$(uname -s)" == "Darwin" ]]; then
+   mkdir -p "${PROJECTDIR}" && cp -r "${TEMPLATE_FOLDER}"/. "${PROJECTDIR}"
+else
+   cp -rT "${TEMPLATE_FOLDER}" "${PROJECTDIR}"
+fi
 drawOK
 coloredMachineEcho "${COLOR_WHITE}" 0.005 "Project folder created and ready."
 echo
