@@ -5,9 +5,9 @@ VS Code Extension: https://marketplace.visualstudio.com/items?itemName=emuliciou
 
 This program is distributed under the attached license. See License.txt.
 
-=================
+==============
 Special Thanks
-=================
+==============
 PG Lomba - Visual identity design
 
 =================
@@ -25,9 +25,10 @@ Troubleshooting
 * On Linux with a tiling window manager your GUI might not work properly. You can find a solution on https://wiki.archlinux.org/title/Java#Gray_window,_applications_not_resizing_with_WM,_menus_immediately_closing
 * On Linux fonts might be rendered without antialiasing by default. You can find anti aliasing option in the Options menu -> Appearance -> Font Anti Aliasing.
 
-====================
-Commandline Commands
-====================
+=====================
+Commandline Arguments
+=====================
+You can pass the path to a file as commandline argument to make Emulicious open it.
 -muted = start without sound (can still be manually enabled, see controls below)
 -scale [level] = start with given zoom level
 -link [address] = connects your Emulicious via link with the given address (e.g. "-link localhost" to connect to yourself)
@@ -38,9 +39,9 @@ Commandline Commands
 -throttle [speed] = throttles the speed to the given value in percent
 -disassemble [file] = Disassemble the provided file. If a directory is provided, all contained files are disassembled.
 
-=================
+===========
 Expressions
-=================
+===========
 Expressions are used in many places in the Debugger.
 For explanations and examples checkout Expressions.txt.
 

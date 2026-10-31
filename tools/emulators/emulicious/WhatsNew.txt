@@ -1,4 +1,34 @@
 ==========
+2026-03-27
+==========
+- Fixed a regression with sample playback on GB (thanks to LIJI)
+- Fixed a regression that could cause sources not to be loaded for devkitSMS (thanks to undeveloper)
+- Fixed an inaccuracy with V9938 VDP commands on MSX (thanks to fabulous and Artrag)
+- Fixed encoding of videos with PAR and uneven dimensions (thanks to Maxim)
+- Fixed that GB Video Player 2 videos did not work with Emulicious BIOS (thanks to ArkoSammy12)
+
+==========
+2026-03-19
+==========
+- Added support for function breakpoints set from remote debuggers
+- Added emulation of ASCIIX-16 and Yamanooto mappers for MSX (thanks to aoineko)
+- Added support for entering expressions when setting register values (thanks to aquacash5)
+- Added an option to disable overlays (thanks to sverx)
+- Added emulation of the Japanese (and Export) paddle, the Mega Mouse and the Sports Pad for Mastersystem (thanks to sverx and raphnet)
+- Added emulation of the Joystick and Mouse for MSX (thanks to aoineko)
+- Some minor performance improvements (thanks to KirbyKing)
+- Fixed a nasty bug that could cause the profiler to lose track of the call stack (thanks to aoineko, Miguel Angel and slogra)
+- Fixed a nasty bug where stepping backwards could go wrong (thanks to ISSOtm and Max The Great)
+- Fixed a nasty bug related to (hblank) HDMA (thanks to Biddly and Zumi)
+- Fixed synchronization of audio and video in video recordings (thanks to Maxim and Flygon)
+- Fixed a bug that could amplify noise in a specific way of playing back samples on Game Boy (thanks to ISO 3166-1 alpha-3 and VtR)
+- Fixed a bug related to length counters of the GB sound channels (thanks to Occocc)
+- Fixed missing stereo output in recordings (thanks to Maxim)
+- Fixed a bug with Game Boy serial IO timings (thanks to bbbbbbr)
+- Fixed rednering of the selected tile in 8x16 mode in the Tile Viewer for Mastersystem (thanks to slogra)
+- Fixed that the Interrupts checkbox in the Trace Logger did not get persisted
+
+==========
 2024-08-31
 ==========
 - Added Overlays feature to the debugger

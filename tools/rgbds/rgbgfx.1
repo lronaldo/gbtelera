@@ -2,7 +2,7 @@
 .\"
 .\" SPDX-License-Identifier: MIT
 .\"
-.Dd July 31, 2025
+.Dd September 22, 2026
 .Dt RGBGFX 1
 .Os
 .Sh NAME
@@ -13,8 +13,10 @@
 .Op Fl CmhOuVwXYZ
 .Op Fl v Op Fl v No ...
 .Op Fl a Ar attrmap | Fl A
+.Op Fl B Ar color
 .Op Fl b Ar base_ids
 .Op Fl c Ar pal_spec
+.Op Fl \-color Ar when
 .Op Fl d Ar depth
 .Op Fl i Ar input_tiles
 .Op Fl L Ar slice
@@ -42,7 +44,13 @@ is to divide the input PNG into 8\[tmu]8 pixel
 convert each of those squares into 1bpp or 2bpp tile data, and save all of the tile data in a file.
 It also has options to generate a tile map, attribute map, and/or palette set as well; more on that and how the conversion process can be tweaked below.
 .Sh ARGUMENTS
-Note that options can be abbreviated as long as the abbreviation is unambiguous:
+.Nm
+accepts the usual short and long options, such as
+.Fl V
+and 
+.Fl -version .
+Options later in the command line override those set earlier, except for when duplicate options are considered an error.
+Options can be abbreviated as long as the abbreviation is unambiguous:
 .Fl \-verb
 is
 .Fl \-verbose ,
@@ -50,26 +58,6 @@ but
 .Fl \-ver
 is invalid because it could also be
 .Fl \-version .
-.Pp
-.Nm
-accepts decimal, binary, and hexadecimal numbers in option arguments.
-Decimal numbers are written as usual; binary numbers must be prefixed with either
-.Ql %
-or
-.Ql 0b ,
-and hexadecimal numbers must be prefixed with either
-.Ql $
-(which will likely need escaping or quoting to avoid being interpreted by the shell), or
-.Ql 0x .
-Leading zeros (after the base prefix, if any) are accepted, and letters are not case-sensitive.
-All of these are equivalent:
-.Ql 42 ,
-.Ql 042 ,
-.Ql 0b00101010 ,
-.Ql 0B101010 ,
-.Ql 0x2A ,
-.Ql 0X2A ,
-.Ql 0x2a .
 .Pp
 Unless otherwise noted, passing
 .Ql -
@@ -81,7 +69,39 @@ To suppress this behavior, and open a file in the current directory actually cal
 pass
 .Ql ./-
 instead.
-Using standard input or output more than once in a single command will likely produce unexpected results.
+Using standard input or output for more than one file in a single command may produce unexpected results.
+.Pp
+.Nm
+accepts decimal, hexadecimal, octal, and binary for numeric option arguments.
+Decimal numbers are written as usual; hexadecimal numbers must be prefixed with either
+.Ql $
+or
+.Ql 0x ;
+octal numbers must be prefixed with either
+.Ql &
+or
+.Ql 0o ;
+and binary numbers must be prefixed with either
+.Ql %
+or
+.Ql 0b .
+(The prefixes
+.Ql $
+and
+.Ql &
+will likely need escaping or quoting to avoid being interpreted by the shell.)
+Leading zeros (after the base prefix, if any) are accepted, and letters are not case-sensitive.
+For example, all of these are equivalent:
+.Ql 42 ,
+.Ql 042 ,
+.Ql 0x2A ,
+.Ql 0X2A ,
+.Ql 0x2a ,
+.Ql &52 ,
+.Ql 0o52 ,
+.Ql 0O052 ,
+.Ql 0b00101010 ,
+.Ql 0B101010 .
 .Pp
 The following options are accepted:
 .Bl -tag -width Ds
@@ -124,9 +144,17 @@ Set the base IDs for tile map output.
 should be one or two numbers between 0 and 255, separated by a comma; they are for bank 0 and bank 1 respectively.
 Both default to 0.
 .It Fl C , Fl \-color-curve
-When generating palettes, use a color curve mimicking the Game Boy Color's screen.
-The resulting colors may look closer to the input image's
-.Sy on hardware and accurate emulators .
+Modifies the color palettes
+.Pq whether they are generated from the input image or taken from an input palette specification
+with a color curve mimicking the Game Boy Color's screen.
+This adjusts the
+.Em absolute
+RGB color values so that the
+.Em perceived
+colors, when displayed on Game Boy Color hardware
+.Pq or an emulator with an accurate display filter ,
+will look like the original colors as displayed on a backlit computer screen.
+Note that GBC displays can look very different depending on the ambient light and their exact hardware model, so this color curve is only a "best effort".
 .It Fl c Ar pal_spec , Fl \-colors Ar pal_spec
 Use the specified color palettes instead of having
 .Nm
@@ -177,8 +205,25 @@ the low two bits 0-1 specify which gray shade goes in color index 0,
 the next two bits 2-3 specify which gray shade goes in color index 1,
 and so on.
 Gray shade 0 is the lightest (white), 3 is the darkest (black).
+If
+.Ar pal_spec
+is the case-insensitive word
+.Cm dmg ,
+then it acts like
+.Cm dmg=E4 ,
+i.e. the darkest gray will end up in color index 0, and so on.
 The same gray shade cannot go in two color indexes.
 To specify a DMG palette, the input PNG must have all its colors in shades of gray, without any transparent colors.
+.It Sy automatic palette generation
+If
+.Ar pal_spec
+is the case-insensitive word
+.Cm auto ,
+then a palette is automatically generated using the procedure described in
+.Sx PALETTE GENERATION .
+This is the default behavior if
+.Fl c
+was not specified.
 .It Sy external palette spec
 Otherwise,
 .Ar pal_spec
@@ -195,11 +240,26 @@ See
 .Sx PALETTE SPECIFICATION FORMATS
 for a list of formats and their descriptions.
 .El
+.It Fl \-color Ar when
+Specify when to highlight warning and error messages with color:
+.Ql always ,
+.Ql never ,
+or
+.Ql auto .
+.Ql auto
+determines whether to use colors based on the
+.Ql Lk https://no-color.org/ NO_COLOR
+or
+.Ql Lk https://force-color.org/ FORCE_COLOR
+environment variables, or whether the output is to a TTY.
 .It Fl d Ar depth , Fl \-depth Ar depth
 Set the bit depth of the output tile data, in bits per pixel (bpp), either 1 or 2 (the default).
 This changes how tile data is output, and the maximum number of colors per palette (2 and 4 respectively).
 .It Fl h , Fl \-help
 Print help text for the program and exit.
+(Help text wraps to the value of the
+.Dv COLUMNS
+environment variable if that is defined as nonzero; or else to the console window width if output is to a TTY.)
 .It Fl i Ar input_tiles , Fl \-input-tileset Ar input_tiles
 Use the specified input tiles in addition to having
 .Nm
@@ -257,8 +317,10 @@ This is useful for example if the input image is a sheet of some sort, and you w
 The default is to process the whole image as-is.
 .Pp
 .Ar slice
-must be two number pairs, separated by a colon.
-The numbers must be separated by commas; space is allowed around all punctuation.
+must be formatted as
+.Ql Ar X , Ns Ar Y : Ns Ar W , Ns Ar H :
+two comma-separated number pairs, separated by a colon.
+Whitespace is allowed around all punctuation.
 The first number pair specifies the X and Y coordinates of the top-left pixel that will be processed (anything above it or to its left will be ignored).
 The second number pair specifies how many tiles to process horizontally and vertically, respectively.
 .Pp
@@ -317,7 +379,7 @@ Output the image's palette set to this file.
 Same as
 .Fl p Ar base_path Ns .pal
 .Pq see Sx Automatic output paths .
-.It Fl q Ar pal_file , Fl \-palette-map Ar pal_file
+.It Fl q Ar pal_map , Fl \-palette-map Ar pal_map
 Output the image's palette map to this file.
 This is useful if the input image contains more than 8 palettes, as the attribute map only contains the lower 3 bits of the palette indices.
 .It Fl Q , Fl \-auto-palette-map
@@ -382,14 +444,17 @@ Be verbose.
 The verbosity level is increased by one each time the flag is specified, with each level including the previous:
 .Bl -enum -compact
 .It
+Print the
 .Nm
-prints out its configuration before doing anything.
+configuration before taking actions.
 .It
-A generic message is printed before doing most actions.
+Print a notice before significant actions.
 .It
-Some of the actions' intermediate results are printed.
+Print some of the actions' intermediate results.
 .It
-Some internal debug printing is enabled.
+Print some internal debug information.
+.It
+Print detailed internal information.
 .El
 The verbosity level does not go past 6.
 .Pp
@@ -426,9 +491,17 @@ deduplication if
 .Fl u
 was enabled, so you probably don't want to use this option in combination with
 .Fl u .
-Note also that the tiles that don't get output will not count towards
+.Pp
+Also note that the tiles that don't get output in the tile data
+.Em do
+still count towards
 .Fl N Ap s
-limit.
+limit, since they may get output in the tilemap or attribute map.
+If you need to omit input tiles from all output in a way that does not count towards
+.Fl N ,
+use
+.Fl B
+background tiles.
 .It Fl Y , Fl \-mirror-y
 Deduplicate tiles that are vertically symmetrical mirror images of each other across the Y axis.
 Implies
@@ -436,69 +509,53 @@ Implies
 .It Fl Z , Fl \-columns
 Read squares from the PNG in column-major order (column by column), instead of the default row-major order (line by line).
 This primarily affects tile map and attribute map output, although it may also change generated tile data and palettes.
+.It @ Ns Ar at_file
+Read more options and arguments from a file, as if its contents were given on the command line.
+Arguments are separated by whitespace or newlines.
+Lines starting with a hash sign
+.Pq Ql #
+are considered comments and ignored.
+.Pp
+No shell processing is performed, such as wildcard or variable expansion.
+There is no support for escaping or quoting whitespace to be included in arguments.
+The standard
+.Ql --
+to stop option processing also disables at-file processing.
+Note that while
+.Ql --
+can be used
+.Em inside
+an at-file, it only disables option processing within that at-file, and processing continues in the parent scope.
+.Pp
+See
+.Sx At-files
+below for an explanation of how this can be useful.
 .El
 .Ss At-files
 In a given project, many images are to be converted with different flags.
-The traditional way of solving this problem has been to specify the different flags for each image in the Makefile / build script; this can be inconvenient, as it centralizes all those flags away from the images they concern.
+The traditional way of solving this problem has been to specify the different flags for each image in the Makefile or build script; this can be inconvenient, as it centralizes all those flags away from the images they concern.
 .Pp
-To avoid these drawbacks,
-.Nm
-supports
+To avoid these drawbacks, you can use
 .Dq at-files :
 any command-line argument that begins with an at sign
 .Pq Ql @
-is interpreted as one.
-The rest of the argument (without the @, that is) is interpreted as the path to a file, whose contents are interpreted as if given on the command line.
+is interpreted as one, as documented above.
 At-files can be stored right next to the corresponding image, for example:
 .Pp
 .Dl $ rgbgfx -o image.2bpp -t image.tilemap @image.flags image.png
 .Pp
-This will read additional flags from file
+This will read additional flags from the file
 .Ql image.flags ,
-which could contains for example
+which could contain, for example,
 .Ql -b 128
 to specify a base offset for the image's tiles.
 The above command could be generated from the following
 .Xr make 1
-rule, for example:
+rule:
 .Bd -literal -offset indent
 %.2bpp %.tilemap: %.flags %.png
-	rgbgfx -o $*.2bpp -t $*.tilemap @$*.flags $*.png
+        rgbgfx -o $*.2bpp -t $*.tilemap @$*.flags $*.png
 .Ed
-.Pp
-Since the contents of at-files are interpreted by
-.Nm ,
-.Sy no shell processing is performed ;
-for example, shell variables are not expanded
-.Ql ( $PWD ,
-.Ql %WINDIR% ,
-etc.).
-In at-files, lines that are empty or contain only whitespace are ignored; lines that begin with a hash sign
-.Pq Ql # ,
-optionally preceded by whitespace, are considered comments and also ignored.
-Each line can contain any number of arguments, which are separated by whitespace.
-.Pq \&No quoting feature to prevent this is provided.
-.Pp
-Note that a leading
-.Ql @
-has no special meaning on option arguments, and that the standard
-.Ql --
-to stop option processing also disables at-file processing.
-For example, the following command line reads command-line options from
-.Ql tilesets/town.flags
-then
-.Ql tilesets.flags ,
-but processes
-.Ql @tilesets/town.png
-as the input image and outputs tile data to
-.Ql @tilesets/town.2bpp :
-.Pp
-.Dl $ rgbgfx -o @tilesets/town.2bpp @tilesets/town.flags @tilesets.flags -- @tilesets/town.png
-.Pp
-At-files can also specify the input image directly, and call for more at-files, both using the regular syntax.
-Note that while
-.Ql --
-can be used in an at-file (with identical semantics), it is only effective inside of it\(emnormal option processing continues in the parent scope.
 .Sh PALETTE SPECIFICATION FORMATS
 The following formats are supported:
 .Bl -tag -width Ds
@@ -536,15 +593,11 @@ for example because you want to use palette swaps, please use
 .Fl c
 to specify the palette explicitly.
 .Pp
-First, if the image contains
+Note that if the image contains
 .Em any
-transparent pixel, color #0 of
+transparent pixels, color #0 of
 .Em all
-palettes will be allocated to it.
-This is done
-.Sy even if palettes were explicitly specified using Fl c ;
-then the specification only covers color #1 onwards.
-.Pq If you do not want this, ask your image editor to remove the alpha channel.
+palettes will be transparent.
 .Pp
 After generating palettes,
 .Nm
@@ -600,9 +653,10 @@ behavior depends on an internal detail of how the PNG is saved, specifically its
 chunk.
 Since few image editors (such as GIMP) expose that detail, this behavior is only kept for compatibility and should be considered deprecated.
 .Pp
-It turns out that palette generation is an NP-complete problem, so
+It turns out that palette generation is an NP-complete problem known as "pagination", so
 .Nm
-does not attempt to find the optimal solution, but instead to find a good one in a reasonable amount of time.
+does not attempt to find the optimal solution, but instead uses an "overload-and-remove" heuristic to find a good one in a reasonable amount of time.
+(There are no guarantees about how this algorithm will generate palettes, apart from the constraints documented above.)
 It is possible to compute the optimal solution externally (using a solver, for example), and then provide it to
 .Nm
 via
@@ -735,7 +789,7 @@ to prevent turning all warnings into errors.
 .It Fl Werror=
 Make the specified warning or meta warning into an error.
 A warning's name is appended
-.Pq example: Fl Werror=embedded ,
+.Pq example: Fl Werror=obsolete ,
 and this warning is implicitly enabled and turned into an error.
 This can be negated as
 .Fl Wno-error=
@@ -757,10 +811,10 @@ Enables literally every warning.
 .El
 .Pp
 The following warnings are actual warning flags; with each description, the corresponding warning flag is included.
-Note that each of these flag also has a negation (for example,
-.Fl Wtrim-nonempty
+Note that each of these flags also has a negation (for example,
+.Fl Wobsolete
 enables the warning that
-.Fl Wno-trim-nonempty
+.Fl Wno-obsolete
 disables; and
 .Fl Wall
 enables every warning that
@@ -777,6 +831,8 @@ Warn when a generated palette is sorted according to the input PNG's embedded pa
 was not provided.
 This warning is enabled by
 .Fl Weverything .
+.It Fl Wno-obsolete
+Warn when obsolete features are encountered, which have been deprecated and may later be removed.
 .It Fl Wtrim-nonempty
 Warn when
 .Fl x
@@ -824,9 +880,8 @@ $ rgbgfx level1.png -i tileset.2bpp -c gbc:tileset.pal -t level1.tilemap -a leve
 $ rgbgfx level2.png -i tileset.2bpp -c gbc:tileset.pal -t level2.tilemap -a level2.attrmap
 .Ed
 .Sh BUGS
-Please report bugs and mistakes in this man page on
+Please report bugs or mistakes in this documentation on
 .Lk https://github.com/gbdev/rgbds/issues GitHub .
-Bug reports and feature requests about RGBDS are also welcome!
 .Sh SEE ALSO
 .Xr rgbasm 1 ,
 .Xr rgblink 1 ,

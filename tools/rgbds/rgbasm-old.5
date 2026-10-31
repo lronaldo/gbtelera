@@ -2,7 +2,7 @@
 .\"
 .\" SPDX-License-Identifier: MIT
 .\"
-.Dd July 31, 2025
+.Dd September 22, 2026
 .Dt RGBASM-OLD 5
 .Os
 .Sh NAME
@@ -129,12 +129,66 @@ Deprecated in 0.5.0, removed in 0.6.0.
 .Pp
 Instead, use
 .Ql 3.141592653 .
+.Ss __DATE__ and __TIME__
+Deprecated in 1.0.0.
+.Pp
+Instead, use
+.Ql __ISO_8601_LOCAL__ .
 .Ss Treating multi-character strings as numbers
-Deprecated in 0.9.0.
+Deprecated in 0.9.0, removed in 1.0.0.
 .Pp
 Instead, use a multi-value
 .Ic CHARMAP ,
 or explicitly combine the values of individual characters.
+.Pp
+For example, instead of a multi-character string like:
+.Bd -literal -offset indent
+    CHARMAP "X", $12
+    CHARMAP "Y", $34
+    LD BC, "XY"
+.Ed
+.Pp
+Either use a multi-value
+.Ic CHARMAP :
+.Bd -literal -offset indent
+    CHARMAP "X", $12
+    CHARMAP "Y", $34
+    CHARMAP "<XY>", 'X', 'Y'
+    LD BC, CHARVAL("<XY>", 0) << 8 | CHARVAL("<XY>", 1)
+.Ed
+.Pp
+Or combine the individual characters:
+.Bd -literal -offset indent
+    CHARMAP "X", $12
+    CHARMAP "Y", $34
+    LD BC, 'X' << 8 | 'Y'
+.Ed
+.Pp
+Or use a single-value character:
+.Bd -literal -offset indent
+    CHARMAP "X", $12
+    CHARMAP "Y", $34
+    CHARMAP "<XY>", 'X' << 8 | 'Y'
+    LD BC, '<XY>'
+.Ed
+.Ss Treating strings as numbers
+Deprecated in 1.0.0.
+.Pp
+Instead, use character constants or the
+.Ic CHARVAL
+function.
+.Pp
+For example, instead of a string literal like
+.Ql LD A, \&"R" ,
+use a numeric character literal
+.Ql LD A, 'R' .
+.Pp
+And instead of a string expression like
+.Ql CP STRUPR("\e1") ,
+use a numeric
+.Ic CHARVAL
+expression
+.Ql CP CHARVAL(STRUPR("\e1")) .
 .Ss rgbgfx -f/--fix and -F/--fix-and-save
 Removed in 0.6.0.
 .Pp
@@ -209,6 +263,31 @@ typed in column 1.
 Instead, use
 .Ql \&;
 comments.
+.Ss STRIN, STRRIN, STRSUB, and CHARSUB
+Deprecated in 1.0.0.
+.Pp
+These functions used 1-based indexing of string characters, which was inconsistent with the 0-based indexing used more often in programming.
+.Pp
+Instead of
+.Ic STRIN ,
+use
+.Ic STRFIND ;
+instead of
+.Ic STRRIN ,
+use
+.Ic STRRFIND ;
+instead of
+.Ic STRSUB ,
+use
+.Ic STRSLICE ;
+and instead of
+.Ic CHARSUB ,
+use
+.Ic  STRCHAR .
+.Pp
+Note that
+.Ic STRSLICE
+takes a start and end index instead of a start index and a length.
 .Ss PRINTT, PRINTI, PRINTV, and PRINTF
 Deprecated in 0.5.0, removed in 0.6.0.
 .Pp
@@ -247,7 +326,7 @@ and
 .Ic DATA ,
 use
 .Ic ROMX ;
-instead of
+and instead of
 .Ic BSS ,
 use
 .Ic  WRAM0 .
@@ -272,12 +351,12 @@ or
 and
 .Ql LD A, [HL-] ) .
 .Ss LDIO
-Deprecated in 0.9.0.
+Deprecated in 0.9.0, removed in 1.0.0.
 .Pp
 Instead, use
 .Ql LDH .
 .Ss LD [C], A and LD A, [C]
-Deprecated in 0.9.0.
+Deprecated in 0.9.0, removed in 1.0.0.
 .Pp
 Instead, use
 .Ql LDH [C], A
@@ -292,7 +371,7 @@ were also deprecated in 0.9.0, but were
 .Em undeprecated
 in 0.9.1.
 .Ss LDH [n8], A and LDH A, [n8]
-Deprecated in 0.9.0.
+Deprecated in 0.9.0, removed in 1.0.0.
 .Pp
 .Ql LDH
 used to treat "addresses" from
@@ -329,19 +408,24 @@ Deprecated in 0.6.0, removed in 0.8.0.
 Instead, use
 .Fl I
 or
-.Fl -include .
-.Ss rgbgfx -h
+.Fl \-include .
+.Ss rgbfix -O/--overwrite
+Deprecated in 1.0.0.
+.Pp
+Instead, use
+.Ql -Wno-overwrite .
+.Ss rgbgfx -h/--horizontal
 Removed in 0.6.0.
 .Pp
 Instead, use
 .Fl Z
 or
-.Fl -columns .
+.Fl \-columns .
 .Ss rgbgfx --output-*
 Deprecated in 0.7.0, removed in 0.8.0.
 .Pp
 Instead, use
-.Fl -auto-* .
+.Fl \-auto-* .
 .Sh CHANGED
 These are breaking changes that did not alter syntax, and so could not practically be deprecated.
 .Ss Trigonometry function units
@@ -450,6 +534,13 @@ Instead, use
 .Ql Label:
 and
 .Ql Label:: .
+.Ss Extra underscores in integer constants
+Fixed in 1.0.0.
+.Pp
+Underscores, the optional digit separators in integer constants, used to allow more than one in sequence, or trailing without digits on either side.
+Now only one underscore is allowed between two digits, or between the base prefix and a digit, or between a digit and the
+.Ql q
+fixed-point precision suffix.
 .Ss ADD r16 with implicit first HL operand
 Fixed in 0.5.0.
 .Pp

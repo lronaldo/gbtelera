@@ -1,4 +1,4 @@
-Copyright (c) 2013-2024, Michael Stegmaier (Calindro)
+Copyright (c) 2013-2026, Michael Stegmaier (Calindro)
 https://www.emulicious.net
 All rights reserved.
 

@@ -1,18 +1,16 @@
 .\" SPDX-License-Identifier: MIT
 .\"
-.Dd July 31, 2025
+.Dd September 22, 2026
 .Dt RGBDS 5
 .Os
 .Sh NAME
 .Nm rgbds
 .Nd object file format documentation
 .Sh DESCRIPTION
-This is the description of the object files used by
+This is the description of the RGB object file format that is output by
 .Xr rgbasm 1
-and
+and read by
 .Xr rgblink 1 .
-.Em Please note that the specification is not stable yet.
-RGBDS is still in active development, and some new features require adding more information to the object file, or modifying some fields, both of which break compatibility with older versions.
 .Sh FILE STRUCTURE
 The following types are used:
 .Pp
@@ -79,18 +77,22 @@ order, meaning the node with ID 0 is the last one in the list!
 .It Cm LONG Ar ParentLineNo
 Line at which the parent node's context was exited; meaningless for the root node.
 .It Cm BYTE Ar Type
+Bits 0\(en6 indicate the node's type:
 .Bl -column "Value" -compact
 .It Sy Value Ta Sy Meaning
 .It 0 Ta REPT node
 .It 1 Ta File node
 .It 2 Ta Macro node
 .El
+.Pp
+Bit\ 7 being set means that the node is "quieted"
+.Pq see Do Excluding locations from backtraces Dc in Xr rgbasm 5 .
 .It Cm IF Ar Type No \(!= 0
 If the node is not a REPT node...
 .Pp
 .Bl -tag -width Ds -compact
 .It Cm STRING Ar Name
-The node's name: either a file name, or the macro's name prefixes by its definition's file name
+The node's name: either a file name, or the macro's name prefixed by its definition's file name
 .Pq e.g. Ql src/includes/defines.asm::error .
 .El
 .It Cm ELSE
@@ -401,9 +403,6 @@ Checks if the value is a valid bit index
 .Pq see e.g. Do BIT u3, r8 Dc in Xr gbz80 7 ,
 that is, from 0 to 7.
 The value is then ORed with the instruction's mask.
-.It Li $80 Ta Integer literal; followed by the
-.Cm LONG
-integer.
 .It Li $70 Ta Cm HIGH
 byte.
 .It Li $71 Ta Cm LOW
@@ -412,6 +411,9 @@ byte.
 value.
 .It Li $73 Ta Cm TZCOUNT
 value.
+.It Li $80 Ta Integer literal; followed by the
+.Cm LONG
+integer.
 .It Li $81 Ta A symbol's value; followed by the symbol's
 .Cm LONG
 ID.

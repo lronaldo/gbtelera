@@ -1,6 +1,6 @@
 .\" SPDX-License-Identifier: MIT
 .\"
-.Dd July 31, 2025
+.Dd September 22, 2026
 .Dt RGBASM 1
 .Os
 .Sh NAME
@@ -8,8 +8,11 @@
 .Nd Game Boy assembler
 .Sh SYNOPSIS
 .Nm
-.Op Fl EhVvw
+.Op Fl EhVw
+.Op Fl v Op Fl v No ...
+.Op Fl B Ar param
 .Op Fl b Ar chars
+.Op Fl \-color Ar when
 .Op Fl D Ar name Ns Op = Ns Ar value
 .Op Fl g Ar chars
 .Op Fl I Ar path
@@ -34,14 +37,14 @@ The
 program creates an RGB object file from an assembly source file.
 The object file format is documented in
 .Xr rgbds 5 .
-.Pp
-The input
-.Ar asmfile
-can be a path to a file, or
-.Cm \-
-to read from standard input.
-.Pp
-Note that options can be abbreviated as long as the abbreviation is unambiguous:
+.Sh ARGUMENTS
+.Nm
+accepts the usual short and long options, such as
+.Fl V
+and 
+.Fl -version .
+Options later in the command line override those set earlier, except for when duplicate options are considered an error.
+Options can be abbreviated as long as the abbreviation is unambiguous:
 .Fl \-verb
 is
 .Fl \-verbose ,
@@ -49,8 +52,76 @@ but
 .Fl \-ver
 is invalid because it could also be
 .Fl \-version .
-The arguments are as follows:
+.Pp
+Unless otherwise noted, passing
+.Ql -
+(a single dash) as a file name makes
+.Nm
+use standard input (for input files) or standard output (for output files).
+To suppress this behavior, and open a file in the current directory actually called
+.Ql - ,
+pass
+.Ql ./-
+instead.
+Using standard input or output for more than one file in a single command may produce unexpected results.
+.Pp
+.Nm
+accepts decimal, hexadecimal, octal, and binary for numeric option arguments.
+Decimal numbers are written as usual; hexadecimal numbers must be prefixed with either
+.Ql $
+or
+.Ql 0x ;
+octal numbers must be prefixed with either
+.Ql &
+or
+.Ql 0o ;
+and binary numbers must be prefixed with either
+.Ql %
+or
+.Ql 0b .
+(The prefixes
+.Ql $
+and
+.Ql &
+will likely need escaping or quoting to avoid being interpreted by the shell.)
+Leading zeros (after the base prefix, if any) are accepted, and letters are not case-sensitive.
+For example, all of these are equivalent:
+.Ql 42 ,
+.Ql 042 ,
+.Ql 0x2A ,
+.Ql 0X2A ,
+.Ql 0x2a ,
+.Ql &52 ,
+.Ql 0o52 ,
+.Ql 0O052 ,
+.Ql 0b00101010 ,
+.Ql 0B101010 .
+.Pp
+The following options are accepted:
 .Bl -tag -width Ds
+.It Fl B Ar param , Fl \-backtrace Ar param
+Configures how location backtraces are printed if warnings or errors occur.
+This flag may be specified multiple times with different parameters that combine meaningfully.
+If
+.Ar param
+is a positive number, it specifies the maximum backtrace depth, abbreviating deeper ones.
+Other valid parameter values are the following:
+.Bl -tag -width Ds
+.It Cm 0
+Do not limit the maximum backtrace depth; this is the default.
+.It Cm all
+Force all locations to be printed, even "quiet" ones (see
+.Dq Excluding locations from backtraces
+in
+.Xr rgbasm 5
+for details).
+.It Cm no-all
+Do not print "quieted" locations in backtraces; this is the default.
+.It Cm collapse
+Print all locations on one line.
+.It Cm no-collapse
+Print one location per line; this is the default.
+.El
 .It Fl b Ar chars , Fl \-binary-digits Ar chars
 Allow two characters to be used for binary constants in addition to the default
 .Sq 0
@@ -65,6 +136,18 @@ letters,
 .Sq # ,
 or
 .Sq @ .
+.It Fl \-color Ar when
+Specify when to highlight warning and error messages with color:
+.Ql always ,
+.Ql never ,
+or
+.Ql auto .
+.Ql auto
+determines whether to use colors based on the
+.Ql Lk https://no-color.org/ NO_COLOR
+or
+.Ql Lk https://force-color.org/ FORCE_COLOR
+environment variables, or whether the output is to a TTY.
 .It Fl D Ar name Ns Oo = Ns Ar value Oc , Fl \-define Ar name Ns Oo = Ns Ar value Oc
 Add a string symbol to the compiled source code.
 This is equivalent to
@@ -95,6 +178,9 @@ or
 The defaults are 0123.
 .It Fl h , Fl \-help
 Print help text for the program and exit.
+(Help text wraps to the value of the
+.Dv COLUMNS
+environment variable if that is defined as nonzero; or else to the console window width if output is to a TTY.)
 .It Fl I Ar path , Fl \-include Ar path
 Add a new
 .Dq include path ;
@@ -233,6 +319,24 @@ below).
 Print the version of the program and exit.
 .It Fl v , Fl \-verbose
 Be verbose.
+The verbosity level is increased by one each time the flag is specified, with each level including the previous:
+.Bl -enum -compact
+.It
+Print the
+.Nm
+configuration before taking actions.
+.It
+Print a notice before significant actions.
+.It
+Print some of the actions' intermediate results.
+.It
+Print some internal debug information.
+.It
+Print detailed internal information.
+.El
+The verbosity level does not go past 6.
+.Pp
+Note that verbose output is only intended to be consumed by humans, and may change without notice between RGBDS releases; relying on those for scripts is not advised.
 .It Fl W Ar warning , Fl \-warning Ar warning
 Set warning flag
 .Ar warning .
@@ -251,6 +355,23 @@ disables this behavior.
 The default is 100 if
 .Nm
 is printing errors to a terminal, and 0 otherwise.
+.It @ Ns Ar at_file
+Read more options and arguments from a file, as if its contents were given on the command line.
+Arguments are separated by whitespace or newlines.
+Lines starting with a hash sign
+.Pq Ql #
+are considered comments and ignored.
+.Pp
+No shell processing is performed, such as wildcard or variable expansion.
+There is no support for escaping or quoting whitespace to be included in arguments.
+The standard
+.Ql --
+to stop option processing also disables at-file processing.
+Note that while
+.Ql --
+can be used
+.Em inside
+an at-file, it only disables option processing within that at-file, and processing continues in the parent scope.
 .El
 .Sh DIAGNOSTICS
 Warnings are diagnostic messages that indicate possibly erroneous behavior that does not necessarily compromise the assembling process.
@@ -289,9 +410,9 @@ Enables literally every warning.
 .Pp
 The following warnings are actual warning flags; with each description, the corresponding warning flag is included.
 Note that each of these flags also has a negation (for example,
-.Fl Wcharmap-redef
+.Fl Wobsolete
 enables the warning that
-.Fl Wno-charmap-redef
+.Fl Wno-obsolete
 disables; and
 .Fl Wall
 enables every warning that
@@ -329,6 +450,15 @@ This warning is enabled by
 .Fl Wall .
 .It Fl Wdiv
 Warn when dividing the smallest negative integer (-2**31) by -1, which yields itself due to integer overflow.
+.It Fl Wempty-data-directive
+Warn when
+.Ic DB ,
+.Ic DW ,
+or
+.Ic DL
+is used without an argument in a ROM section.
+This warning is enabled by
+.Fl Wall .
 .It Fl Wempty-macro-arg
 Warn when a macro argument is empty.
 This warning is enabled by
@@ -339,10 +469,12 @@ Warn when
 is called with an empty string as its second argument (the substring to replace).
 This warning is enabled by
 .Fl Wall .
-.It Fl Wlarge-constant
-Warn when a constant too large to fit in a signed 32-bit integer is encountered.
+.It Fl Wexport-undefined
+Warn when exporting an undefined symbol.
 This warning is enabled by
 .Fl Wall .
+.It Fl Wno-large-constant
+Warn when a constant too large to fit in a signed 32-bit integer is encountered.
 .It Fl Wmacro-shift
 Warn when shifting macro arguments past their limits.
 This warning is enabled by
@@ -375,10 +507,10 @@ or
 .Fl Wno-purge
 disables this warning.
 .Fl Wpurge=1
-or just
-.Fl Wpurge
 warns when purging any exported symbol (regardless of type).
 .Fl Wpurge=2
+or just
+.Fl Wpurge
 also warns when purging any label (even if not exported).
 .It Fl Wshift
 Warn when shifting right a negative value.
@@ -394,10 +526,10 @@ or
 .Fl Wno-truncation
 disables this warning.
 .Fl Wtruncation=1
-warns when an N-bit value is 2**N or greater, or less than -2**N.
-.Fl Wtruncation=2
 or just
 .Fl Wtruncation
+warns when an N-bit value is 2**N or greater, or less than -2**N.
+.Fl Wtruncation=2
 also warns when an N-bit value is less than -2**(N-1), which will not fit in two's complement encoding.
 .It Fl Wunmapped-char=
 Warn when a character goes through charmap conversion but has no defined mapping.
@@ -461,7 +593,7 @@ Writing the final assembler state to a file:
 Or to multiple files:
 .Dl $ rgbasm -s equ,var:numbers.dump.asm -s equs:strings.dump.asm foo.asm
 .Sh BUGS
-Please report bugs on
+Please report bugs or mistakes in this documentation on
 .Lk https://github.com/gbdev/rgbds/issues GitHub .
 .Sh SEE ALSO
 .Xr rgbasm 5 ,

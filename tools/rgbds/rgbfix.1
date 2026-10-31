@@ -1,6 +1,6 @@
 .\" SPDX-License-Identifier: MIT
 .\"
-.Dd July 31, 2025
+.Dd September 22, 2026
 .Dt RGBFIX 1
 .Os
 .Sh NAME
@@ -8,8 +8,9 @@
 .Nd Game Boy header utility and checksum fixer
 .Sh SYNOPSIS
 .Nm
-.Op Fl hjOsVvw
+.Op Fl hjsVvw
 .Op Fl C | c
+.Op Fl \-color Ar when
 .Op Fl f Ar fix_spec
 .Op Fl i Ar game_id
 .Op Fl k Ar licensee_str
@@ -22,7 +23,7 @@
 .Op Fl r Ar ram_size
 .Op Fl t Ar title_str
 .Op Fl W Ar warning
-.Op Ar
+.Ar
 .Sh DESCRIPTION
 The
 .Nm
@@ -38,23 +39,67 @@ Developers are advised to fill those fields with 0x00 bytes in their source code
 .Nm ,
 and to have already populated whichever fields they don't specify using
 .Nm .
-.Pp
-The input
-.Ar asmfile
-can be a path to a file, or
-.Cm \-
-to read from standard input.
-.Pp
-Note that options can be abbreviated as long as the abbreviation is unambiguous:
-.Fl \-color-o
+.Sh ARGUMENTS
+.Nm
+accepts the usual short and long options, such as
+.Fl V
+and 
+.Fl -version .
+Options later in the command line override those set earlier, except for when duplicate options are considered an error.
+Options can be abbreviated as long as the abbreviation is unambiguous:
+.Fl \-ver
 is
-.Fl \-color-only ,
+.Fl \-version ,
 but
-.Fl \-color
+.Fl \-v
 is invalid because it could also be
-.Fl \-color-compatible .
-Options later in the command line override those set earlier.
-Accepted options are as follows:
+.Fl \-validate .
+.Pp
+Unless otherwise noted, passing
+.Ql -
+(a single dash) as a file name makes
+.Nm
+use standard input (for input files) or standard output (for output files).
+To suppress this behavior, and open a file in the current directory actually called
+.Ql - ,
+pass
+.Ql ./-
+instead.
+Using standard input or output for more than one file in a single command may produce unexpected results.
+.Pp
+.Nm
+accepts decimal, hexadecimal, octal, and binary for numeric option arguments.
+Decimal numbers are written as usual; hexadecimal numbers must be prefixed with either
+.Ql $
+or
+.Ql 0x ;
+octal numbers must be prefixed with either
+.Ql &
+or
+.Ql 0o ;
+and binary numbers must be prefixed with either
+.Ql %
+or
+.Ql 0b .
+(The prefixes
+.Ql $
+and
+.Ql &
+will likely need escaping or quoting to avoid being interpreted by the shell.)
+Leading zeros (after the base prefix, if any) are accepted, and letters are not case-sensitive.
+For example, all of these are equivalent:
+.Ql 42 ,
+.Ql 042 ,
+.Ql 0x2A ,
+.Ql 0X2A ,
+.Ql 0x2a ,
+.Ql &52 ,
+.Ql 0o52 ,
+.Ql 0O052 ,
+.Ql 0b00101010 ,
+.Ql 0B101010 .
+.Pp
+The following options are accepted:
 .Bl -tag -width Ds
 .It Fl C , Fl \-color-only
 Set the Game Boy Color\(enonly flag
@@ -70,6 +115,18 @@ to 0x80.
 This overrides
 .Fl c
 if it was set prior.
+.It Fl \-color Ar when
+Specify when to highlight warning and error messages with color:
+.Ql always ,
+.Ql never ,
+or
+.Ql auto .
+.Ql auto
+determines whether to use colors based on the
+.Ql Lk https://no-color.org/ NO_COLOR
+or
+.Ql Lk https://force-color.org/ FORCE_COLOR
+environment variables, or whether the output is to a TTY.
 .It Fl f Ar fix_spec , Fl \-fix-spec Ar fix_spec
 Fix certain header values that the Game Boy checks for correctness.
 Alternatively, intentionally trash these values by writing their binary inverse instead.
@@ -95,6 +152,9 @@ Trash the global checksum.
 .El
 .It Fl h , Fl \-help
 Print help text for the program and exit.
+(Help text wraps to the value of the
+.Dv COLUMNS
+environment variable if that is defined as nonzero; or else to the console window width if output is to a TTY.)
 .It Fl i Ar game_id , Fl \-game-id Ar game_id
 Set the game ID string
 .Pq Ad 0x13F Ns \(en Ns Ad 0x142
@@ -136,9 +196,6 @@ section below.
 Set the ROM version
 .Pq Ad 0x14C
 to a given value from 0 to 0xFF.
-.It Fl O , Fl \-overwrite
-Alias for
-.Fl Wno-overwrite .
 .It Fl o Ar out_file , Fl \-output Ar out_file
 Write the modified ROM image to the given file, or '-' to write to standard output.
 If not specified, the input files are modified in-place, or written to standard output if read from standard input.
@@ -159,7 +216,7 @@ Set the SGB flag
 .Pq Ad 0x146
 to 0x03.
 This flag will be ignored by the SGB unless the old licensee code
-.Pq Fl -l
+.Pq Fl l
 is 0x33!
 .It Fl t Ar title , Fl \-title Ar title
 Set the title string
@@ -189,6 +246,23 @@ See the
 section for a list of warnings.
 .It Fl w
 Disable all warning output, even when turned into errors.
+.It @ Ns Ar at_file
+Read more options and arguments from a file, as if its contents were given on the command line.
+Arguments are separated by whitespace or newlines.
+Lines starting with a hash sign
+.Pq Ql #
+are considered comments and ignored.
+.Pp
+No shell processing is performed, such as wildcard or variable expansion.
+There is no support for escaping or quoting whitespace to be included in arguments.
+The standard
+.Ql --
+to stop option processing also disables at-file processing.
+Note that while
+.Ql --
+can be used
+.Em inside
+an at-file, it only disables option processing within that at-file, and processing continues in the parent scope.
 .El
 .Sh DIAGNOSTICS
 Warnings are diagnostic messages that indicate possibly erroneous behavior that does not necessarily compromise the header-fixing process.
@@ -202,7 +276,7 @@ to prevent turning all warnings into errors.
 .It Fl Werror=
 Make the specified warning or meta warning into an error.
 A warning's name is appended
-.Pq example: Fl Werror=overwrite ,
+.Pq example: Fl Werror=obsolete ,
 and this warning is implicitly enabled and turned into an error.
 This can be negated as
 .Fl Wno-error=
@@ -224,10 +298,10 @@ Enables literally every warning.
 .El
 .Pp
 The following warnings are actual warning flags; with each description, the corresponding warning flag is included.
-Note that each of these flag also has a negation (for example,
-.Fl Wtruncation
+Note that each of these flags also has a negation (for example,
+.Fl Wobsolete
 enables the warning that
-.Fl Wno-truncation
+.Fl Wno-obsolete
 disables; and
 .Fl Wall
 enables every warning that
@@ -240,6 +314,8 @@ prefix, entries are listed alphabetically.
 .Bl -tag -width Ds
 .It Fl Wno-mbc
 Warn when there are inconsistencies with or caveats about the specified MBC type.
+.It Fl Wno-obsolete
+Warn when obsolete features are encountered, which have been deprecated and may later be removed.
 .It Fl Wno-overwrite
 Warn when overwriting different non-zero bytes in the header.
 .It Fl Wno-sgb
@@ -315,7 +391,7 @@ will warn about and ignore
 .Fl j
 if used in combination with TPP1.
 .Sh BUGS
-Please report bugs on
+Please report bugs or mistakes in this documentation on
 .Lk https://github.com/gbdev/rgbds/issues GitHub .
 .Sh SEE ALSO
 .Xr rgbasm 1 ,
